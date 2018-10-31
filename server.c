@@ -7,6 +7,8 @@
 #include "comm.h"
 #include "util.h"
 
+#define SERVER_ID "yeet"
+
 /* -----------Functions that implement server functionality -------------------------*/
 
 /*
@@ -75,9 +77,17 @@ int list_users(int idx, USER * user_list)
  */
 int add_user(int idx, USER * user_list, int pid, char * user_id, int pipe_to_child, int pipe_to_parent)
 {
+	if(idx >= MAX_USER || idx < 0) {
+		return -1;
+	}
 	// populate the user_list structure with the arguments passed to this function
+	user_list[idx].m_pid = pid;
+	user_list[idx].m_user_id = user_id;
+	user_list[idx].m_fd_to_user = pipe_to_child;
+	user_list[idx].m_fd_to_server = pipe_to_parent;
+	user_list[idx].m_status = SLOT_FULL
 	// return the index of user added
-	return 0;
+	return idx;
 }
 
 /*
@@ -236,7 +246,7 @@ void init_user_list(USER * user_list) {
 int main(int argc, char * argv[])
 {
 	int nbytes;
-	setup_connection("YOUR_UNIQUE_ID"); // Specifies the connection point as argument.
+	setup_connection(SERVER_ID); // Specifies the connection point as argument.
 
 	USER user_list[MAX_USER];
 	init_user_list(user_list);   // Initialize user list
@@ -244,6 +254,8 @@ int main(int argc, char * argv[])
 	char buf[MAX_MSG]; 
 	fcntl(0, F_SETFL, fcntl(0, F_GETFL)| O_NONBLOCK);
 	print_prompt("admin");
+	printf("yahhhhhhhhhhhhhhhhhhhhhhhh");
+	fflush(stdout);
 
 	//
 	while(1) {
@@ -253,6 +265,11 @@ int main(int argc, char * argv[])
 		int pipe_SERVER_reading_from_child[2];
 		int pipe_SERVER_writing_to_child[2];
 		char user_id[MAX_USER_ID];
+		if(get_connection(user_id, pipe_SERVER_writing_to_child, pipe_SERVER_reading_from_child) != -1) {
+			printf("connecto\n");
+			fflush(stdout);
+			
+		}
 
 		// Check max user and same user id
 
@@ -261,6 +278,7 @@ int main(int argc, char * argv[])
 		// Server process: Add a new user information into an empty slot   
 		// poll child processes and handle user commands
 		// Poll stdin (input from the terminal) and handle admnistrative command
+		sleep(1);
 	
 		/* ------------------------YOUR CODE FOR MAIN--------------------------------*/
 	}
