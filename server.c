@@ -279,6 +279,7 @@ int main(int argc, char * argv[])
 		// poll child processes and handle user commands
 		// Poll stdin (input from the terminal) and handle admnistrative command
 		sleep(1);
+    printf("ok");
 
 		/* ------------------------YOUR CODE FOR MAIN--------------------------------*/
 	}
