@@ -21,7 +21,7 @@ void main(int argc, char * argv[]) {
 	// You will need to get user name as a parameter, argv[1].
 
 	if(connect_to_server(SERVER_ID, argv[1], pipe_user_reading_from_server, pipe_user_writing_to_server) == -1) {
-    perror("hohohohooho im gnot a gnelf, im gnot a gnoblin, im a gnome, and you've been gnomed!'");
+    perror("Couldn't connect to server.");
 		exit(-1);
 	}
 

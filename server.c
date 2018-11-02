@@ -93,6 +93,8 @@ int add_user(int idx, USER * user_list, int pid, char * user_id, int pipe_to_chi
 void kill_user(int idx, USER * user_list) {
 	// kill a user (specified by idx) by using the systemcall kill()
 	// then call waitpid on the user
+	kill(user_list[idx].m_pid);
+	user_list[idx].m_status = SLOT_EMPTY;
 }
 
 /*
@@ -238,6 +240,30 @@ void init_user_list(USER * user_list) {
 
 /* ---------------------End of the functions that implementServer functionality -----------------*/
 
+/*
+ * Function that each child process loops in
+ */
+int child_IPC(int s_to_c[2], int s_from_c[2], int c_to_u[2], int c_from_u[2]) {
+	close(s_to_c[1]);
+	close(s_from_c[0]);
+	close(c_to_u[0]);
+	close(c_from_u[1]);
+	while (1) {
+		char buf[MAX_MSG];
+		/*if ((read(pipe_SERVER_writing_to_child[0], buf, MAX_MSG)) > 0) {
+			printf("child reads from server: %s", buf);
+			fflush(stdout);
+		}*/
+		if ((read(c_from_u[0], buf, MAX_MSG)) > 0) {
+			printf("child reads from user: %s", buf);
+			fflush(stdout);
+			write(s_from_c[1], buf, MAX_MSG);
+		}
+		
+		usleep(100000);
+	}
+	return 0;
+}
 
 /* ---------------------Start of the Main function ----------------------------------------------*/
 int main(int argc, char * argv[])
@@ -251,7 +277,6 @@ int main(int argc, char * argv[])
 	char buf[MAX_MSG];
 	fcntl(0, F_SETFL, fcntl(0, F_GETFL) | O_NONBLOCK);
 	print_prompt("admin");
-	fflush(stdout);
 
 	//
 	while (1) {
@@ -262,13 +287,12 @@ int main(int argc, char * argv[])
 		int pipe_CHILD_writing_to_user[2];
 		char user_id[MAX_USER_ID];
 		if (get_connection(user_id, pipe_CHILD_writing_to_user, pipe_CHILD_reading_from_user) != -1) {
-			printf("%s connected \n", user_id);
-			fflush(stdout);
+			printf(" * %s connected\n", user_id);
+			print_prompt("admin");
 			fcntl(pipe_CHILD_reading_from_user[0], F_SETFL, fcntl(pipe_CHILD_reading_from_user[0], F_GETFL, 0) | O_NONBLOCK); //makes pipes nonblocking
 			fcntl(pipe_CHILD_writing_to_user[0], F_SETFL, fcntl(pipe_CHILD_writing_to_user[0], F_GETFL, 0) | O_NONBLOCK);
 			// check if user_id already exists in user_list
-			int user_exists = 0;
-			int i;
+			int user_exists = 0, i;
 			for (i = 0; i < MAX_USER; i++) {
 				if (strcmp(user_list[i].m_user_id, user_id) == 0) {
 					user_exists = 1;
@@ -310,25 +334,10 @@ int main(int argc, char * argv[])
 					add_user(new_user_idx, user_list, pid, user_id, pipe_SERVER_writing_to_child[0], pipe_SERVER_reading_from_child[0]);
 				}
 				else {
-					close(pipe_SERVER_writing_to_child[1]);
-					close(pipe_SERVER_reading_from_child[0]);
-					close(pipe_CHILD_writing_to_user[0]);
-					close(pipe_CHILD_reading_from_user[1]);
-					while (1) {
-						char buf[MAX_MSG];
-						/*if ((read(pipe_SERVER_writing_to_child[0], buf, MAX_MSG)) > 0) {
-							printf("child reads from server: %s", buf);
-							fflush(stdout);
-						}*/
-						if ((read(pipe_CHILD_reading_from_user[0], buf, MAX_MSG)) > 0) {
-							printf("child reads from user: %s \n", buf);
-							fflush(stdout);
-							write(pipe_SERVER_reading_from_child[1], buf, MAX_MSG);
-						}
-						
-						usleep(100000);
+					//child infinite loop
+					if (!child_IPC(pipe_SERVER_writing_to_child, pipe_SERVER_reading_from_child, pipe_CHILD_writing_to_user, pipe_CHILD_reading_from_user)) {
+						perror("child IPC has failed");
 					}
-					
 				}
 			}
 		}
@@ -341,7 +350,7 @@ int main(int argc, char * argv[])
 			char buf[MAX_MSG];
 			int oof = read(user_list[i].m_fd_to_server, buf, MAX_MSG);
 			if (oof > 0) {
-				printf("server reads from child: %s \n", buf);
+				printf("server reads from child: %s", buf);
 				fflush(stdout);
 			}
 		}
