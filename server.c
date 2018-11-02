@@ -266,6 +266,16 @@ int main(int argc, char * argv[])
 			printf("connecto\n");
 			fflush(stdout);
 
+      // check if user_id already exists in user_list
+      int user_exists = 0;
+      for(int i = 0; i < MAX_USER; i++) {
+        if(strcmp(user_list[i].m_user_id, user_id) == 0) {
+          user_exists = 1;
+          break;
+        }
+      }
+
+      // search for empty slot, otherwise new_user_idx == -1
 			int new_user_idx = -1;
 			for(int i = 0; i < MAX_USER; i++) {
 				if(user_list[i].m_status == SLOT_EMPTY) {
@@ -276,7 +286,11 @@ int main(int argc, char * argv[])
 			if (new_user_idx == -1) {
 				perror("too many users");
 			}
-			else {
+			else if (user_exists) {
+        perror("user already exists");
+      }
+      // no problems, proceed to fork.
+      else {
 				int pid = fork();
 				if(pid < 0) {
 					//error checking
