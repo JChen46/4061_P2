@@ -79,10 +79,10 @@ int add_user(int idx, USER * user_list, int pid, char * user_id, int pipe_to_chi
 {
 	// populate the user_list structure with the arguments passed to this function
 	user_list[idx].m_pid = pid;
-	user_list[idx].m_user_id = user_id;
+	strcpy(user_list[idx].m_user_id, user_id);
 	user_list[idx].m_fd_to_user = pipe_to_child;
 	user_list[idx].m_fd_to_server = pipe_to_parent;
-	user_list[idx].m_status = SLOT_FULL
+	user_list[idx].m_status = SLOT_FULL;
 	// return the index of user added
 	return idx;
 }
@@ -268,7 +268,8 @@ int main(int argc, char * argv[])
 
       // check if user_id already exists in user_list
       int user_exists = 0;
-      for(int i = 0; i < MAX_USER; i++) {
+	  int i;
+      for(i = 0; i < MAX_USER; i++) {
         if(strcmp(user_list[i].m_user_id, user_id) == 0) {
           user_exists = 1;
           break;
@@ -277,7 +278,7 @@ int main(int argc, char * argv[])
 
       // search for empty slot, otherwise new_user_idx == -1
 			int new_user_idx = -1;
-			for(int i = 0; i < MAX_USER; i++) {
+			for(i = 0; i < MAX_USER; i++) {
 				if(user_list[i].m_status == SLOT_EMPTY) {
 					new_user_idx = i;
 					break;
@@ -302,9 +303,10 @@ int main(int argc, char * argv[])
 					//error checking
 				}
 				else if (pid > 0) {
-          close(pipe_SERVER_writing_to_child[0]);
-          close(pipe_SERVER_reading_from_child[1]);
-					add_user(new_user_idx, user_list, pid, user_id, pipe_SERVER_writing_to_child, pipe_SERVER_reading_from_child);
+					close(pipe_SERVER_writing_to_child[0]);
+					close(pipe_SERVER_reading_from_child[1]);
+					add_user(new_user_idx, user_list, pid, user_id, pipe_SERVER_writing_to_child[0], pipe_SERVER_reading_from_child[1]);
+				}
 				else {
           close(pipe_SERVER_writing_to_child[1]);
           close(pipe_SERVER_reading_from_child[0]);
@@ -312,11 +314,11 @@ int main(int argc, char * argv[])
           close(pipe_CHILD_reading_from_user[1]);
 					while(1) {
             char buf[MAX_MSG];
-            if((i = read(pipe_SERVER_writing_to_child[0], buf, MAX_MSG)) != 0) {
+            if((i = read(pipe_SERVER_writing_to_child[0], buf, MAX_MSG)) > 0) {
               printf("child reads from server: %s", buf);
               fflush(stdout);
             }
-            if((i = read(pipe_CHILD_reading_from_user[0], buf, MAX_MSG)) != 0) {
+            if((i = read(pipe_CHILD_reading_from_user[0], buf, MAX_MSG)) > 0) {
               printf("child reads from user: %s", buf);
               fflush(stdout);
             }
@@ -326,11 +328,12 @@ int main(int argc, char * argv[])
 		}
 
 		// poll child processes and handle user commands
-    for(int i = 0; i < MAX_USER; i++) {
-      if(user_id[i].m_status == SLOT_EMPTY)
+		int i;
+    for(i = 0; i < MAX_USER; i++) {
+      if(user_list[i].m_status == SLOT_EMPTY)
         continue;
       char buf[MAX_MSG];
-      if((i = read(user_id[i].m_fd_to_server, buf, MAX_MSG)) != 0) {
+      if((i = read(user_list[i].m_fd_to_server, buf, MAX_MSG)) > 0) {
         printf("server reads from child: %s", buf);
         fflush(stdout);
       }

@@ -25,7 +25,7 @@ void main(int argc, char * argv[]) {
 		exit(-1);
 	}
 
-  printf("weird number here: %s", pipe_user_reading_from_server[0]);
+  printf("weird number here: %d", pipe_user_reading_from_server[0]);
 	/* -------------- YOUR CODE STARTS HERE -----------------------------------*/
 
 	
