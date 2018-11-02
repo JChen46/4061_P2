@@ -289,6 +289,7 @@ int main(int argc, char * argv[])
 			else if (user_exists) {
         perror("user already exists");
       }
+      
       // no problems, proceed to fork.
       else {
 				int pid = fork();
