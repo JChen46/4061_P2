@@ -11,6 +11,8 @@
 #include <sys/socket.h>
 #include "comm.h"
 
+#define SERVER_ID "yeet"
+
 /* -------------------------Main function for the client ----------------------*/
 void main(int argc, char * argv[]) {
 
@@ -18,10 +20,12 @@ void main(int argc, char * argv[]) {
 
 	// You will need to get user name as a parameter, argv[1].
 
-	if(connect_to_server("YOUR_UNIQUE_ID", argv[1], pipe_user_reading_from_server, pipe_user_writing_to_server) == -1) {
+	if(connect_to_server(SERVER_ID, argv[1], pipe_user_reading_from_server, pipe_user_writing_to_server) == -1) {
+    perror("hohohohooho im gnot a gnelf, im gnot a gnoblin, im a gnome, and you've been gnomed!'");
 		exit(-1);
 	}
 
+  printf("weird number here: %s", pipe_user_reading_from_server[0]);
 	/* -------------- YOUR CODE STARTS HERE -----------------------------------*/
 
 	

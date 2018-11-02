@@ -259,10 +259,10 @@ int main(int argc, char * argv[])
 		/* ------------------------YOUR CODE FOR MAIN--------------------------------*/
 
 		// Handling a new connection using get_connection
-		int pipe_SERVER_reading_from_child[2];
-		int pipe_SERVER_writing_to_child[2];
+    int pipe_CHILD_reading_from_user[2];
+    int pipe_CHILD_writing_to_user[2];
 		char user_id[MAX_USER_ID];
-		if(get_connection(user_id, pipe_SERVER_writing_to_child, pipe_SERVER_reading_from_child) != -1) {
+		if(get_connection(user_id, pipe_CHILD_writing_to_user, pipe_CHILD_reading_from_user) != -1) {
 			printf("connecto\n");
 			fflush(stdout);
 
@@ -292,25 +292,49 @@ int main(int argc, char * argv[])
       
       // no problems, proceed to fork.
       else {
+		    int pipe_SERVER_reading_from_child[2];
+		    int pipe_SERVER_writing_to_child[2];
+        pipe(pipe_SERVER_reading_from_child);
+        pipe(pipe_SERVER_writing_to_child);
+
 				int pid = fork();
 				if(pid < 0) {
 					//error checking
 				}
 				else if (pid > 0) {
+          close(pipe_SERVER_writing_to_child[0]);
+          close(pipe_SERVER_reading_from_child[1]);
 					add_user(new_user_idx, user_list, pid, user_id, pipe_SERVER_writing_to_child, pipe_SERVER_reading_from_child);
-				}
 				else {
-					while(1);
+          close(pipe_SERVER_writing_to_child[1]);
+          close(pipe_SERVER_reading_from_child[0]);
+          close(pipe_CHILD_writing_to_user[0]);
+          close(pipe_CHILD_reading_from_user[1]);
+					while(1) {
+            char buf[MAX_MSG];
+            if((i = read(pipe_SERVER_writing_to_child[0], buf, MAX_MSG)) != 0) {
+              printf("child reads from server: %s", buf);
+              fflush(stdout);
+            }
+            if((i = read(pipe_CHILD_reading_from_user[0], buf, MAX_MSG)) != 0) {
+              printf("child reads from user: %s", buf);
+              fflush(stdout);
+            }
+          }
 				}
 			}
 		}
 
-		// Check max user and same user id
-
-		// Child process: poli users and SERVER
-
-		// Server process: Add a new user information into an empty slot
 		// poll child processes and handle user commands
+    for(int i = 0; i < MAX_USER; i++) {
+      if(user_id[i].m_status == SLOT_EMPTY)
+        continue;
+      char buf[MAX_MSG];
+      if((i = read(user_id[i].m_fd_to_server, buf, MAX_MSG)) != 0) {
+        printf("server reads from child: %s", buf);
+        fflush(stdout);
+      }
+    }
 		// Poll stdin (input from the terminal) and handle admnistrative command
 		sleep(1);
 
