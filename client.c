@@ -25,14 +25,20 @@ void main(int argc, char * argv[]) {
 		exit(-1);
 	}
 
-  printf("weird number here: %d", pipe_user_reading_from_server[0]);
+	//printf("weird number here: %d", pipe_user_reading_from_server[0]);
+	
 	/* -------------- YOUR CODE STARTS HERE -----------------------------------*/
-
+	printf("%s >> ", argv[1]);
 	
 	// poll pipe retrieved and print it to sdiout
 
 	// Poll stdin (input from the terminal) and send it to server (child process) via pipe
+	char buf[MAX_MSG];
+	fgets(buf, MAX_MSG, stdin);
 
+	
+
+	write(pipe_user_writing_to_server[1], buf, MAX_MSG);
 		
 	/* -------------- YOUR CODE ENDS HERE -----------------------------------*/
 }

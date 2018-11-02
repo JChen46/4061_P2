@@ -133,7 +133,7 @@ int setup_connection(char * connect_point)
 		return -1;
 	}
 
-	printf("Wating user's connection.\n");
+	printf("Waiting for user's connection.\n");
 	fcntl(g_sfd, F_SETFL, O_NONBLOCK);
 }
 

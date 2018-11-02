@@ -42,8 +42,8 @@ int list_users(int idx, USER * user_list)
 
 	/* construct a list of user names */
 	s = buf;
-	strncpy(s, "---connecetd user list---\n", strlen("---connecetd user list---\n"));
-	s += strlen("---connecetd user list---\n");
+	strncpy(s, "---connected user list---\n", strlen("---connected user list---\n"));
+	s += strlen("---connected user list---\n");
 	for (i = 0; i < MAX_USER; i++) {
 		if (user_list[i].m_status == SLOT_EMPTY)
 			continue;
@@ -61,7 +61,7 @@ int list_users(int idx, USER * user_list)
 	}
 
 	if(idx < 0) {
-		printf(buf);
+		printf("%s", buf);
 		printf("\n");
 	} else {
 		/* write to the given pipe fd */
@@ -249,37 +249,37 @@ int main(int argc, char * argv[])
 	init_user_list(user_list);   // Initialize user list
 
 	char buf[MAX_MSG];
-	fcntl(0, F_SETFL, fcntl(0, F_GETFL)| O_NONBLOCK);
+	fcntl(0, F_SETFL, fcntl(0, F_GETFL) | O_NONBLOCK);
 	print_prompt("admin");
-	printf("yahhhhhhhhhhhhhhhhhhhhhhhh");
 	fflush(stdout);
 
 	//
-	while(1) {
+	while (1) {
 		/* ------------------------YOUR CODE FOR MAIN--------------------------------*/
 
 		// Handling a new connection using get_connection
-    int pipe_CHILD_reading_from_user[2];
-    int pipe_CHILD_writing_to_user[2];
+		int pipe_CHILD_reading_from_user[2];
+		int pipe_CHILD_writing_to_user[2];
 		char user_id[MAX_USER_ID];
-		if(get_connection(user_id, pipe_CHILD_writing_to_user, pipe_CHILD_reading_from_user) != -1) {
-			printf("connecto\n");
+		if (get_connection(user_id, pipe_CHILD_writing_to_user, pipe_CHILD_reading_from_user) != -1) {
+			printf("%s connected \n", user_id);
 			fflush(stdout);
+			fcntl(pipe_CHILD_reading_from_user[0], F_SETFL, fcntl(pipe_CHILD_reading_from_user[0], F_GETFL, 0) | O_NONBLOCK); //makes pipes nonblocking
+			fcntl(pipe_CHILD_writing_to_user[0], F_SETFL, fcntl(pipe_CHILD_writing_to_user[0], F_GETFL, 0) | O_NONBLOCK);
+			// check if user_id already exists in user_list
+			int user_exists = 0;
+			int i;
+			for (i = 0; i < MAX_USER; i++) {
+				if (strcmp(user_list[i].m_user_id, user_id) == 0) {
+					user_exists = 1;
+					break;
+				}
+			}
 
-      // check if user_id already exists in user_list
-      int user_exists = 0;
-	  int i;
-      for(i = 0; i < MAX_USER; i++) {
-        if(strcmp(user_list[i].m_user_id, user_id) == 0) {
-          user_exists = 1;
-          break;
-        }
-      }
-
-      // search for empty slot, otherwise new_user_idx == -1
+			// search for empty slot, otherwise new_user_idx == -1
 			int new_user_idx = -1;
-			for(i = 0; i < MAX_USER; i++) {
-				if(user_list[i].m_status == SLOT_EMPTY) {
+			for (i = 0; i < MAX_USER; i++) {
+				if (user_list[i].m_status == SLOT_EMPTY) {
 					new_user_idx = i;
 					break;
 				}
@@ -288,58 +288,65 @@ int main(int argc, char * argv[])
 				perror("too many users");
 			}
 			else if (user_exists) {
-        perror("user already exists");
-      }
-      
-      // no problems, proceed to fork.
-      else {
-		    int pipe_SERVER_reading_from_child[2];
-		    int pipe_SERVER_writing_to_child[2];
-        pipe(pipe_SERVER_reading_from_child);
-        pipe(pipe_SERVER_writing_to_child);
+				perror("user already exists");
+			}
+
+			// no problems, proceed to fork.
+			else {
+				int pipe_SERVER_reading_from_child[2];
+				int pipe_SERVER_writing_to_child[2];
+				pipe(pipe_SERVER_reading_from_child);
+				pipe(pipe_SERVER_writing_to_child);
+				fcntl(pipe_SERVER_reading_from_child[0], F_SETFL, fcntl(pipe_SERVER_reading_from_child[0], F_GETFL, 0) | O_NONBLOCK); //makes pipes nonblocking
+				fcntl(pipe_SERVER_writing_to_child[0], F_SETFL, fcntl(pipe_SERVER_writing_to_child[0], F_GETFL, 0) | O_NONBLOCK);
 
 				int pid = fork();
-				if(pid < 0) {
+				if (pid < 0) {
 					//error checking
 				}
 				else if (pid > 0) {
 					close(pipe_SERVER_writing_to_child[0]);
 					close(pipe_SERVER_reading_from_child[1]);
-					add_user(new_user_idx, user_list, pid, user_id, pipe_SERVER_writing_to_child[0], pipe_SERVER_reading_from_child[1]);
+					add_user(new_user_idx, user_list, pid, user_id, pipe_SERVER_writing_to_child[0], pipe_SERVER_reading_from_child[0]);
 				}
 				else {
-          close(pipe_SERVER_writing_to_child[1]);
-          close(pipe_SERVER_reading_from_child[0]);
-          close(pipe_CHILD_writing_to_user[0]);
-          close(pipe_CHILD_reading_from_user[1]);
-					while(1) {
-            char buf[MAX_MSG];
-            if((i = read(pipe_SERVER_writing_to_child[0], buf, MAX_MSG)) > 0) {
-              printf("child reads from server: %s", buf);
-              fflush(stdout);
-            }
-            if((i = read(pipe_CHILD_reading_from_user[0], buf, MAX_MSG)) > 0) {
-              printf("child reads from user: %s", buf);
-              fflush(stdout);
-            }
-          }
+					close(pipe_SERVER_writing_to_child[1]);
+					close(pipe_SERVER_reading_from_child[0]);
+					close(pipe_CHILD_writing_to_user[0]);
+					close(pipe_CHILD_reading_from_user[1]);
+					while (1) {
+						char buf[MAX_MSG];
+						/*if ((read(pipe_SERVER_writing_to_child[0], buf, MAX_MSG)) > 0) {
+							printf("child reads from server: %s", buf);
+							fflush(stdout);
+						}*/
+						if ((read(pipe_CHILD_reading_from_user[0], buf, MAX_MSG)) > 0) {
+							printf("child reads from user: %s \n", buf);
+							fflush(stdout);
+							write(pipe_SERVER_reading_from_child[1], buf, MAX_MSG);
+						}
+						
+						usleep(100000);
+					}
+					
 				}
 			}
 		}
 
 		// poll child processes and handle user commands
 		int i;
-    for(i = 0; i < MAX_USER; i++) {
-      if(user_list[i].m_status == SLOT_EMPTY)
-        continue;
-      char buf[MAX_MSG];
-      if((i = read(user_list[i].m_fd_to_server, buf, MAX_MSG)) > 0) {
-        printf("server reads from child: %s", buf);
-        fflush(stdout);
-      }
-    }
+		for (i = 0; i < MAX_USER; i++) {
+			if (user_list[i].m_status == SLOT_EMPTY)
+				continue;
+			char buf[MAX_MSG];
+			int oof = read(user_list[i].m_fd_to_server, buf, MAX_MSG);
+			if (oof > 0) {
+				printf("server reads from child: %s \n", buf);
+				fflush(stdout);
+			}
+		}
 		// Poll stdin (input from the terminal) and handle admnistrative command
-		sleep(1);
+		usleep(100000);
 
 		/* ------------------------YOUR CODE FOR MAIN--------------------------------*/
 	}
