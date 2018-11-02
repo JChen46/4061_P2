@@ -1,4 +1,4 @@
-#include <stdio.h> 
+#include <stdio.h>
 #include <fcntl.h>
 #include <errno.h>
 #include <stdlib.h>
@@ -207,7 +207,7 @@ void send_p2p_msg(int idx, USER * user_list, char *buf)
 
 	// get the target user by name using extract_name() function
 	// find the user id using find_user_index()
-	// if user not found, write back to the original user "User not found", using the write()function on pipes. 
+	// if user not found, write back to the original user "User not found", using the write()function on pipes.
 	// if the user is found then write the message that the user wants to send to that user.
 }
 
@@ -248,7 +248,7 @@ int main(int argc, char * argv[])
 	USER user_list[MAX_USER];
 	init_user_list(user_list);   // Initialize user list
 
-	char buf[MAX_MSG]; 
+	char buf[MAX_MSG];
 	fcntl(0, F_SETFL, fcntl(0, F_GETFL)| O_NONBLOCK);
 	print_prompt("admin");
 	printf("yahhhhhhhhhhhhhhhhhhhhhhhh");
@@ -294,11 +294,11 @@ int main(int argc, char * argv[])
 
 		// Child process: poli users and SERVER
 
-		// Server process: Add a new user information into an empty slot   
+		// Server process: Add a new user information into an empty slot
 		// poll child processes and handle user commands
 		// Poll stdin (input from the terminal) and handle admnistrative command
 		sleep(1);
-	
+
 		/* ------------------------YOUR CODE FOR MAIN--------------------------------*/
 	}
 }
