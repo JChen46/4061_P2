@@ -77,9 +77,6 @@ int list_users(int idx, USER * user_list)
  */
 int add_user(int idx, USER * user_list, int pid, char * user_id, int pipe_to_child, int pipe_to_parent)
 {
-	if(idx >= MAX_USER || idx < 0) {
-		return -1;
-	}
 	// populate the user_list structure with the arguments passed to this function
 	user_list[idx].m_pid = pid;
 	user_list[idx].m_user_id = user_id;
@@ -268,7 +265,29 @@ int main(int argc, char * argv[])
 		if(get_connection(user_id, pipe_SERVER_writing_to_child, pipe_SERVER_reading_from_child) != -1) {
 			printf("connecto\n");
 			fflush(stdout);
-			
+
+			int new_user_idx = -1;
+			for(int i = 0; i < MAX_USER; i++) {
+				if(user_list[i].m_status == SLOT_EMPTY) {
+					new_user_idx = i;
+					break;
+				}
+			}
+			if (new_user_idx == -1) {
+				perror("too many users");
+			}
+			else {
+				int pid = fork();
+				if(pid < 0) {
+					//error checking
+				}
+				else if (pid > 0) {
+					add_user(new_user_idx, user_list, pid, user_id, pipe_SERVER_writing_to_child, pipe_SERVER_reading_from_child);
+				}
+				else {
+					while(1);
+				}
+			}
 		}
 
 		// Check max user and same user id
