@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/wait.h>
+#include <signal.h>
 #include "comm.h"
 #include "util.h"
 
@@ -93,8 +94,12 @@ int add_user(int idx, USER * user_list, int pid, char * user_id, int pipe_to_chi
 void kill_user(int idx, USER * user_list) {
 	// kill a user (specified by idx) by using the systemcall kill()
 	// then call waitpid on the user
-	kill(user_list[idx].m_pid);
-	user_list[idx].m_status = SLOT_EMPTY;
+	kill(user_list[idx].m_pid, SIGTERM);
+	int status;
+	waitpid(user_list[idx].m_pid, &status, 0);
+	if (!WIFEXITED(status)) {
+		perror("user died incorrectly");
+	}
 }
 
 /*
@@ -103,10 +108,17 @@ void kill_user(int idx, USER * user_list) {
 void cleanup_user(int idx, USER * user_list)
 {
 	// m_pid should be set back to -1
+	user_list[idx].m_pid = -1;
 	// m_user_id should be set to zero, using memset()
+	memset(user_list[idx].m_user_id, 0, MAX_USER_ID);
 	// close all the fd
+	close(user_list[idx].m_fd_to_user);
+	close(user_list[idx].m_fd_to_server);
 	// set the value of all fd back to -1
+	user_list[idx].m_fd_to_user = -1;
+	user_list[idx].m_fd_to_server = -1;
 	// set the status back to empty
+	user_list[idx].m_status = SLOT_EMPTY;
 }
 
 /*
@@ -115,6 +127,8 @@ void cleanup_user(int idx, USER * user_list)
 void kick_user(int idx, USER * user_list) {
 	// should kill_user()
 	// then perform cleanup_user()
+	kill_user(idx, user_list);
+	cleanup_user(idx, user_list);
 }
 
 /*
@@ -125,6 +139,13 @@ int broadcast_msg(USER * user_list, char *buf, char *sender)
 	//iterate over the user_list and if a slot is full, and the user is not the sender itself,
 	//then send the message to that user
 	//return zero on success
+	for (int i = 0; i < MAX_USER; i++) {
+		if (user_list[i].m_status == SLOT_FULL && strcmp(user_list[i].user_id, sender)) {
+			if (write(user_list[i].m_fd_to_user, buf, MAX_MSG) == -1) {
+				
+			}
+		}
+	}
 	return 0;
 }
 
@@ -331,7 +352,7 @@ int main(int argc, char * argv[])
 				else if (pid > 0) {
 					close(pipe_SERVER_writing_to_child[0]);
 					close(pipe_SERVER_reading_from_child[1]);
-					add_user(new_user_idx, user_list, pid, user_id, pipe_SERVER_writing_to_child[0], pipe_SERVER_reading_from_child[0]);
+					add_user(new_user_idx, user_list, pid, user_id, pipe_SERVER_writing_to_child[1], pipe_SERVER_reading_from_child[0]);
 				}
 				else {
 					//child infinite loop
