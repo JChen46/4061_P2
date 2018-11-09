@@ -94,7 +94,11 @@ void kill_user(int idx, USER * user_list) {
 	// kill a user (specified by idx) by using the systemcall kill()
 	// then call waitpid on the user
 	kill(user_list[idx].m_pid);
-	user_list[idx].m_status = SLOT_EMPTY;
+	int status;
+	waitpid(user_list[idx].m_pid, &status, 0);
+	if (!WIFEXITED(status)) {
+		perror("user died incorrectly");
+	}
 }
 
 /*
@@ -103,8 +107,11 @@ void kill_user(int idx, USER * user_list) {
 void cleanup_user(int idx, USER * user_list)
 {
 	// m_pid should be set back to -1
+	user_list[idx].m_pid = -1;
 	// m_user_id should be set to zero, using memset()
+	memset(user_list[idx].m_user_id, 0, MAX_USER_ID);
 	// close all the fd
+	close(
 	// set the value of all fd back to -1
 	// set the status back to empty
 }
