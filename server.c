@@ -76,7 +76,7 @@ int list_users(int idx, USER * user_list)
 /*
  * add a new user
  */
-int add_user(int idx, USER * user_list, int pid, char * user_id, int pipe_to_child, int pipe_to_parent)
+int add_user(int idx, USER * user_list, int pid, char * user_id, int pipe_to_child, int pipe_to_parent) //server to child[1], child to server[0]
 {
 	// populate the user_list structure with the arguments passed to this function
 	user_list[idx].m_pid = pid;
@@ -159,7 +159,13 @@ int broadcast_msg(USER * user_list, char *inbuf, char *sender)
 void cleanup_users(USER * user_list)
 {
 	// go over the user list and check for any empty slots
-	// call cleanup user for each of those users.
+	for (int i = 0; i < MAX_USER; i++) {
+		if (user_list[i].m_status == SLOT_EMPTY) {
+			// call cleanup user for each of those users.
+			cleanup_user(i, user_list);
+		}
+	}
+	printf("cleaned up user list");
 }
 
 /*
@@ -231,11 +237,19 @@ int extract_text(char *buf, char * text)
  */
 void send_p2p_msg(int idx, USER * user_list, char *buf)
 {
-
+	char* target_name[MAX_USER_ID];
 	// get the target user by name using extract_name() function
+	if ( (extract_name(buf, target_name)) == -1) {
+		perror("Unable to extract username from buffer");
+	}
 	// find the user id using find_user_index()
+	int user_id;
 	// if user not found, write back to the original user "User not found", using the write()function on pipes.
+	if ((user_id = find_user_index(user_list, target_name)) == -1) {
+		write(user_list[idx].m_fd_to_user, "User not found", MAX_MSG);
+	}
 	// if the user is found then write the message that the user wants to send to that user.
+	write(user_list[user_id].m_fd_to_user, buf, MAX_MSG);
 }
 
 //takes in the filename of the file being executed, and prints an error message stating the commands and their usage
