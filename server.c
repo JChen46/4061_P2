@@ -298,7 +298,7 @@ int child_IPC(int s_to_c[2], int s_from_c[2], int c_to_u[2], int c_from_u[2]) {
 			fflush(stdout);
 			write(s_from_c[1], buf, MAX_MSG);
 		}
-		
+
 		usleep(100000);
 	}
 	return 0;
@@ -389,7 +389,7 @@ int main(int argc, char * argv[])
 			char buf[MAX_MSG];
 			int oof = read(user_list[i].m_fd_to_server, buf, MAX_MSG);
 			if (oof > 0) {
-				printf("server reads from child: %s", buf);
+				printf("¯\\_(ツ)_/¯: %s", buf);
 				fflush(stdout);
 			}
 		}
