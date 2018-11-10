@@ -10,6 +10,7 @@
 #include <sys/wait.h>
 #include <sys/socket.h>
 #include "comm.h"
+#include "util.h"
 
 #define SERVER_ID "yeet"
 
@@ -32,9 +33,10 @@ void main(int argc, char * argv[]) {
 	/* -------------- YOUR CODE STARTS HERE -----------------------------------*/
 	close(server_to_user[1]);
 	close(user_to_server[0]);
+	fcntl(server_to_user[0], F_SETFL, fcntl(server_to_user[0], F_GETFL, 0) | O_NONBLOCK);
+	fcntl(0, F_SETFL, fcntl(0, F_GETFL, 0) | O_NONBLOCK);
+	print_prompt(user_id);
 	while(1) {
-		print_prompt(user_id);
-		
 		// poll pipe retrieved and print it to sdtout
 		char buf[MAX_MSG];
 		int readReturn;
@@ -48,7 +50,8 @@ void main(int argc, char * argv[]) {
 				perror("you've been kicked");
 				exit(0);
 			}
-			printf(buf);
+			printf("%s", buf);
+			print_prompt(user_id);
 		}
 
 		// Poll stdin (input from the terminal) and send it to server (child process) via pipe
@@ -61,7 +64,9 @@ void main(int argc, char * argv[]) {
 			if (write(user_to_server[1], buf, MAX_MSG) == -1) {
 				perror("error sending user message to server");
 			}
+			print_prompt(user_id);
 		}
+		usleep(100000);
 
 		//chris: poll pipe to server and stdin. if the pipe to the server closes, exit (you've been kicked).
 	}
