@@ -55,7 +55,9 @@ void main(int argc, char * argv[]) {
 		}
 
 		// Poll stdin (input from the terminal) and send it to server (child process) via pipe
-		if (read(0, buf, MAX_MSG) == -1) {
+		int n;
+		if ((n = read(0, buf, MAX_MSG)) == -1) {
+			buf[n] = '\0';
 			if (errno != EAGAIN) {
 				perror("error reading user message");
 			}

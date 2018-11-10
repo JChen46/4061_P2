@@ -143,9 +143,11 @@ int broadcast_msg(USER * user_list, char *inbuf, char *sender)
 	for (i = 0; i < MAX_USER; i++) {
 		char buf[MAX_MSG + MAX_USER_ID + 2];
 		if (user_list[i].m_status == SLOT_FULL && strcmp(user_list[i].m_user_id, sender)) {
+			printf("before: %s \n", buf);
 			strcpy(buf, user_list[i].m_user_id);
 			strcat(buf, ": ");
 			strcat(buf, inbuf);
+			printf("after: %s \n", buf);
 			if (write(user_list[i].m_fd_to_user, buf, MAX_MSG) == -1) {
 				fprintf(stderr, "failed to broadcast message to %s", user_list[i].m_user_id);
 			}
@@ -296,8 +298,8 @@ int child_IPC(int s_to_c[2], int s_from_c[2], int c_to_u[2], int c_from_u[2]) {
 			fflush(stdout);
 		}*/
 		if ((read(c_from_u[0], buf, MAX_MSG)) > 0) {
-			printf("child reads from user: %s", buf);
-			fflush(stdout);
+			//printf("child reads from user: %s", buf);
+			//fflush(stdout);
 			write(s_from_c[1], buf, MAX_MSG);
 		}
 
@@ -391,7 +393,7 @@ int main(int argc, char * argv[])
 			char buf[MAX_MSG];
 			int oof = read(user_list[i].m_fd_to_server, buf, MAX_MSG);
 			if (oof > 0) {
-				printf("¯\\_(ツ)_/¯: %s", buf);
+				printf("%s: %s",user_list[i].m_user_id, buf);
 				fflush(stdout);
 				if (strncmp(buf, "\\list", 5)) {
 					list_users(i, user_list);
