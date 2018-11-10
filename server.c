@@ -94,7 +94,11 @@ int add_user(int idx, USER * user_list, int pid, char * user_id, int pipe_to_chi
 void kill_user(int idx, USER * user_list) {
 	// kill a user (specified by idx) by using the systemcall kill()
 	// then call waitpid on the user
+<<<<<<< HEAD
 	kill(user_list[idx].m_pid, SIGTERM);
+=======
+	kill(user_list[idx].m_pid);
+>>>>>>> 18e3b75455aeb4788f36ba7cb2acb1e8525c4a4a
 	int status;
 	waitpid(user_list[idx].m_pid, &status, 0);
 	if (!WIFEXITED(status)) {
@@ -112,8 +116,12 @@ void cleanup_user(int idx, USER * user_list)
 	// m_user_id should be set to zero, using memset()
 	memset(user_list[idx].m_user_id, 0, MAX_USER_ID);
 	// close all the fd
+<<<<<<< HEAD
 	close(user_list[idx].m_fd_to_user);
 	close(user_list[idx].m_fd_to_server);
+=======
+	close(
+>>>>>>> 18e3b75455aeb4788f36ba7cb2acb1e8525c4a4a
 	// set the value of all fd back to -1
 	user_list[idx].m_fd_to_user = -1;
 	user_list[idx].m_fd_to_server = -1;
