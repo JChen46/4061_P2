@@ -32,6 +32,8 @@ void main(int argc, char * argv[]) {
 	/* -------------- YOUR CODE STARTS HERE -----------------------------------*/
 	close(server_to_user[1]);
 	close(user_to_server[0]);
+	fcntl(server_to_user[0], F_SETFL, fcntl(user_to_child[0], F_GETFL, 0) | O_NONBLOCK); //makes pipes nonblocking
+	fcntl(0, F_SETFL, fcntl(user_to_child[0], F_GETFL, 0) | O_NONBLOCK); //makes pipes nonblocking
 	while(1) {
 		print_prompt(user_id);
 		
@@ -48,7 +50,7 @@ void main(int argc, char * argv[]) {
 				perror("you've been kicked");
 				exit(0);
 			}
-			printf(buf);
+			printf("%s", buf);
 		}
 
 		// Poll stdin (input from the terminal) and send it to server (child process) via pipe
