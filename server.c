@@ -139,14 +139,15 @@ int broadcast_msg(USER * user_list, char *inbuf, char *sender)
 	//iterate over the user_list and if a slot is full, and the user is not the sender itself,
 	//then send the message to that user
 	//return zero on success
-	for (int i = 0; i < MAX_USER; i++) {
+	int i;
+	for (i = 0; i < MAX_USER; i++) {
 		char buf[MAX_MSG + MAX_USER_ID + 2];
 		if (user_list[i].m_status == SLOT_FULL && strcmp(user_list[i].m_user_id, sender)) {
 			strcpy(buf, user_list[i].m_user_id);
 			strcat(buf, ": ");
 			strcat(buf, inbuf);
 			if (write(user_list[i].m_fd_to_user, buf, MAX_MSG) == -1) {
-				printf(stderr, "failed to broadcast message to %s", user_list[i].m_user_id);
+				fprintf(stderr, "failed to broadcast message to %s", user_list[i].m_user_id);
 			}
 		}
 	}
@@ -158,8 +159,9 @@ int broadcast_msg(USER * user_list, char *inbuf, char *sender)
  */
 void cleanup_users(USER * user_list)
 {
+	int i;
 	// go over the user list and check for any empty slots
-	for (int i = 0; i < MAX_USER; i++) {
+	for (i = 0; i < MAX_USER; i++) {
 		if (user_list[i].m_status == SLOT_EMPTY) {
 			// call cleanup user for each of those users.
 			cleanup_user(i, user_list);
@@ -237,7 +239,7 @@ int extract_text(char *buf, char * text)
  */
 void send_p2p_msg(int idx, USER * user_list, char *buf)
 {
-	char* target_name[MAX_USER_ID];
+	char target_name[MAX_USER_ID];
 	// get the target user by name using extract_name() function
 	if ( (extract_name(buf, target_name)) == -1) {
 		perror("Unable to extract username from buffer");
@@ -391,6 +393,18 @@ int main(int argc, char * argv[])
 			if (oof > 0) {
 				printf("¯\\_(ツ)_/¯: %s", buf);
 				fflush(stdout);
+				if (strncmp(buf, "\\list", 5)) {
+					list_users(i, user_list);
+				}
+				else if (strncmp(buf, "\\exit", 5)) {
+					kick_user(i, user_list);
+				}
+				else if (strncmp(buf, "\\p2p", 4)) {
+					send_p2p_msg(i, user_list, buf);
+				}
+				else {
+					broadcast_msg(user_list, buf, user_list[i].m_user_id);
+				}
 			}
 		}
 		// Poll stdin (input from the terminal) and handle admnistrative command
