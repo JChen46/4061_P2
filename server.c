@@ -94,11 +94,7 @@ int add_user(int idx, USER * user_list, int pid, char * user_id, int pipe_to_chi
 void kill_user(int idx, USER * user_list) {
 	// kill a user (specified by idx) by using the systemcall kill()
 	// then call waitpid on the user
-<<<<<<< HEAD
 	kill(user_list[idx].m_pid, SIGTERM);
-=======
-	kill(user_list[idx].m_pid);
->>>>>>> 18e3b75455aeb4788f36ba7cb2acb1e8525c4a4a
 	int status;
 	waitpid(user_list[idx].m_pid, &status, 0);
 	if (!WIFEXITED(status)) {
@@ -116,12 +112,8 @@ void cleanup_user(int idx, USER * user_list)
 	// m_user_id should be set to zero, using memset()
 	memset(user_list[idx].m_user_id, 0, MAX_USER_ID);
 	// close all the fd
-<<<<<<< HEAD
 	close(user_list[idx].m_fd_to_user);
 	close(user_list[idx].m_fd_to_server);
-=======
-	close(
->>>>>>> 18e3b75455aeb4788f36ba7cb2acb1e8525c4a4a
 	// set the value of all fd back to -1
 	user_list[idx].m_fd_to_user = -1;
 	user_list[idx].m_fd_to_server = -1;
@@ -148,7 +140,7 @@ int broadcast_msg(USER * user_list, char *buf, char *sender)
 	//then send the message to that user
 	//return zero on success
 	for (int i = 0; i < MAX_USER; i++) {
-		if (user_list[i].m_status == SLOT_FULL && strcmp(user_list[i].user_id, sender)) {
+		if (user_list[i].m_status == SLOT_FULL && strcmp(user_list[i].m_user_id, sender)) {
 			if (write(user_list[i].m_fd_to_user, buf, MAX_MSG) == -1) {
 				
 			}
@@ -312,14 +304,14 @@ int main(int argc, char * argv[])
 		/* ------------------------YOUR CODE FOR MAIN--------------------------------*/
 
 		// Handling a new connection using get_connection
-		int pipe_CHILD_reading_from_user[2];
-		int pipe_CHILD_writing_to_user[2];
+		int user_to_child[2];
+		int child_to_user[2];
 		char user_id[MAX_USER_ID];
-		if (get_connection(user_id, pipe_CHILD_writing_to_user, pipe_CHILD_reading_from_user) != -1) {
+		if (get_connection(user_id, child_to_user, user_to_child) != -1) {
 			printf(" * %s connected\n", user_id);
 			print_prompt("admin");
-			fcntl(pipe_CHILD_reading_from_user[0], F_SETFL, fcntl(pipe_CHILD_reading_from_user[0], F_GETFL, 0) | O_NONBLOCK); //makes pipes nonblocking
-			fcntl(pipe_CHILD_writing_to_user[0], F_SETFL, fcntl(pipe_CHILD_writing_to_user[0], F_GETFL, 0) | O_NONBLOCK);
+			fcntl(user_to_child[0], F_SETFL, fcntl(user_to_child[0], F_GETFL, 0) | O_NONBLOCK); //makes pipes nonblocking
+			fcntl(child_to_user[0], F_SETFL, fcntl(child_to_user[0], F_GETFL, 0) | O_NONBLOCK);
 			// check if user_id already exists in user_list
 			int user_exists = 0, i;
 			for (i = 0; i < MAX_USER; i++) {
@@ -346,25 +338,25 @@ int main(int argc, char * argv[])
 
 			// no problems, proceed to fork.
 			else {
-				int pipe_SERVER_reading_from_child[2];
-				int pipe_SERVER_writing_to_child[2];
-				pipe(pipe_SERVER_reading_from_child);
-				pipe(pipe_SERVER_writing_to_child);
-				fcntl(pipe_SERVER_reading_from_child[0], F_SETFL, fcntl(pipe_SERVER_reading_from_child[0], F_GETFL, 0) | O_NONBLOCK); //makes pipes nonblocking
-				fcntl(pipe_SERVER_writing_to_child[0], F_SETFL, fcntl(pipe_SERVER_writing_to_child[0], F_GETFL, 0) | O_NONBLOCK);
+				int child_to_server[2];
+				int server_to_child[2];
+				pipe(child_to_server);
+				pipe(server_to_child);
+				fcntl(child_to_server[0], F_SETFL, fcntl(child_to_server[0], F_GETFL, 0) | O_NONBLOCK); //makes pipes nonblocking
+				fcntl(server_to_child[0], F_SETFL, fcntl(server_to_child[0], F_GETFL, 0) | O_NONBLOCK);
 
 				int pid = fork();
 				if (pid < 0) {
 					//error checking
 				}
 				else if (pid > 0) {
-					close(pipe_SERVER_writing_to_child[0]);
-					close(pipe_SERVER_reading_from_child[1]);
-					add_user(new_user_idx, user_list, pid, user_id, pipe_SERVER_writing_to_child[1], pipe_SERVER_reading_from_child[0]);
+					close(server_to_child[0]);
+					close(child_to_server[1]);
+					add_user(new_user_idx, user_list, pid, user_id, server_to_child[1], child_to_server[0]);
 				}
 				else {
 					//child infinite loop
-					if (!child_IPC(pipe_SERVER_writing_to_child, pipe_SERVER_reading_from_child, pipe_CHILD_writing_to_user, pipe_CHILD_reading_from_user)) {
+					if (!child_IPC(server_to_child, child_to_server, child_to_user, user_to_child)) {
 						perror("child IPC has failed");
 					}
 				}
