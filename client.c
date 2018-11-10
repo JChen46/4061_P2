@@ -15,8 +15,7 @@
 
 /* -------------------------Main function for the client ----------------------*/
 void main(int argc, char * argv[]) {
-
-	int pipe_user_reading_from_server[2], pipe_user_writing_to_server[2];
+	int server_to_user[2], user_to_server[2];
 
 	// You will need to get user name as a parameter, argv[1].
 	//checks if user id is an argument
@@ -26,25 +25,46 @@ void main(int argc, char * argv[]) {
 		exit(1);
 	}
 
-	if(connect_to_server(SERVER_ID, argv[1], pipe_user_reading_from_server, pipe_user_writing_to_server) == -1) {
+	if(connect_to_server(SERVER_ID, user_id, server_to_user, user_to_server) == -1) {
     perror("Couldn't connect to server.");
 		exit(-1);
 	}
-	
 	/* -------------- YOUR CODE STARTS HERE -----------------------------------*/
-	printf("%s >> ", argv[1]);
-	
-	// poll pipe retrieved and print it to sdiout
+	close(server_to_user[1]);
+	close(user_to_server[0]);
+	while(1) {
+		print_prompt(user_id);
+		
+		// poll pipe retrieved and print it to sdtout
+		char buf[MAX_MSG];
+		int readReturn;
+		if ((readReturn = read(server_to_user[0], buf, MAX_MSG)) == -1) {
+			if (errno != EAGAIN) {
+				perror("error reading server message");
+			}
+		}
+		else {
+			if (readReturn == 0) {
+				perror("you've been kicked");
+				exit(0);
+			}
+			printf(buf);
+		}
 
-	// Poll stdin (input from the terminal) and send it to server (child process) via pipe
-	char buf[MAX_MSG];
-	fgets(buf, MAX_MSG, stdin);
+		// Poll stdin (input from the terminal) and send it to server (child process) via pipe
+		if (read(0, buf, MAX_MSG) == -1) {
+			if (errno != EAGAIN) {
+				perror("error reading user message");
+			}
+		}
+		else {
+			if (write(user_to_server[1], buf, MAX_MSG) == -1) {
+				perror("error sending user message to server");
+			}
+		}
 
-	
-
-	write(pipe_user_writing_to_server[1], buf, MAX_MSG);
-
-	//chris: poll pipe to server and stdin. if the pipe to the server closes, exit (you've been kicked).
+		//chris: poll pipe to server and stdin. if the pipe to the server closes, exit (you've been kicked).
+	}
 		
 	/* -------------- YOUR CODE ENDS HERE -----------------------------------*/
 }

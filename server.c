@@ -134,15 +134,19 @@ void kick_user(int idx, USER * user_list) {
 /*
  * broadcast message to all users
  */
-int broadcast_msg(USER * user_list, char *buf, char *sender)
+int broadcast_msg(USER * user_list, char *inbuf, char *sender)
 {
 	//iterate over the user_list and if a slot is full, and the user is not the sender itself,
 	//then send the message to that user
 	//return zero on success
 	for (int i = 0; i < MAX_USER; i++) {
+		char buf[MAX_MSG + MAX_USER_ID + 2];
 		if (user_list[i].m_status == SLOT_FULL && strcmp(user_list[i].m_user_id, sender)) {
+			strcpy(buf, user_list[i].m_user_id);
+			strcat(buf, ": ");
+			strcat(buf, inbuf);
 			if (write(user_list[i].m_fd_to_user, buf, MAX_MSG) == -1) {
-				
+				printf(stderr, "failed to broadcast message to %s", user_list[i].m_user_id);
 			}
 		}
 	}
