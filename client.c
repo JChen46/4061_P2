@@ -50,19 +50,19 @@ void main(int argc, char * argv[]) {
 				perror("you've been kicked");
 				exit(0);
 			}
-			printf("%s", buf);
+			printf("\n%s", buf);
 			print_prompt(user_id);
 		}
 
 		// Poll stdin (input from the terminal) and send it to server (child process) via pipe
 		int n;
 		if ((n = read(0, buf, MAX_MSG)) == -1) {
-			buf[n] = '\0';
 			if (errno != EAGAIN) {
 				perror("error reading user message");
 			}
 		}
 		else {
+			buf[n] = '\0';
 			if (write(user_to_server[1], buf, MAX_MSG) == -1) {
 				perror("error sending user message to server");
 			}

@@ -58,13 +58,14 @@ int list_users(int idx, USER * user_list)
 		strcpy(buf, "<no users>\n");
 	} else {
 		s--;
-		strncpy(s, "\0", 1);
+		strncpy(s, "\n\n\0", 3);
 	}
 
 	if(idx < 0) {
 		printf("%s", buf);
 		printf("\n");
 	} else {
+		printf("\n");
 		/* write to the given pipe fd */
 		if (write(user_list[idx].m_fd_to_user, buf, strlen(buf) + 1) < 0)
 			perror("writing to server shell");
@@ -144,7 +145,7 @@ int broadcast_msg(USER * user_list, char *inbuf, char *sender)
 		char buf[MAX_MSG + MAX_USER_ID + 2];
 		if (user_list[i].m_status == SLOT_FULL && strcmp(user_list[i].m_user_id, sender)) {
 			printf("before: %s \n", buf);
-			strcpy(buf, user_list[i].m_user_id);
+			strcpy(buf, sender);
 			strcat(buf, ": ");
 			strcat(buf, inbuf);
 			printf("after: %s \n", buf);
@@ -286,21 +287,22 @@ void init_user_list(USER * user_list) {
 /*
  * Function that each child process loops in
  */
-int child_IPC(int s_to_c[2], int s_from_c[2], int c_to_u[2], int c_from_u[2]) {
-	close(s_to_c[1]);
-	close(s_from_c[0]);
-	close(c_to_u[0]);
-	close(c_from_u[1]);
+int child_IPC(int server_to_child[2], int child_to_server[2], int child_to_user[2], int user_to_child[2]) {
+	close(server_to_child[1]);
+	close(child_to_server[0]);
+	close(child_to_user[0]);
+	close(user_to_child[1]);
 	while (1) {
 		char buf[MAX_MSG];
-		/*if ((read(pipe_SERVER_writing_to_child[0], buf, MAX_MSG)) > 0) {
-			printf("child reads from server: %s", buf);
-			fflush(stdout);
-		}*/
-		if ((read(c_from_u[0], buf, MAX_MSG)) > 0) {
-			//printf("child reads from user: %s", buf);
-			//fflush(stdout);
-			write(s_from_c[1], buf, MAX_MSG);
+		if ((read(server_to_child[0], buf, MAX_MSG)) > 0) {
+			if(write(child_to_user[1], buf, MAX_MSG) == -1) {
+				perror("problem in child: writing to user");
+			}
+		}
+		if ((read(user_to_child[0], buf, MAX_MSG)) > 0) {
+			if(write(child_to_server[1], buf, MAX_MSG) == -1) {
+				perror("problem in child: writing to server");
+			}
 		}
 
 		usleep(100000);
@@ -395,13 +397,13 @@ int main(int argc, char * argv[])
 			if (oof > 0) {
 				printf("%s: %s",user_list[i].m_user_id, buf);
 				fflush(stdout);
-				if (strncmp(buf, "\\list", 5)) {
+				if (strncmp(buf, "\\list", 5) == 0) {
 					list_users(i, user_list);
 				}
-				else if (strncmp(buf, "\\exit", 5)) {
+				else if (strncmp(buf, "\\exit", 5) == 0) {
 					kick_user(i, user_list);
 				}
-				else if (strncmp(buf, "\\p2p", 4)) {
+				else if (strncmp(buf, "\\p2p", 4) == 0) {
 					send_p2p_msg(i, user_list, buf);
 				}
 				else {
