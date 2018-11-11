@@ -1,7 +1,15 @@
+/* CSci4061 F2018 Assignment 2
+* login: hexxx863
+* date: 11/10/2018
+* name: John Chen, Raymond He, Chris Roelofs
+* id: 5281260, 5221477, 5245460*/
+
 Purpose:
 	The purpose of this program is to allow for a chat between processes. There should be some functionality when it comes to who to send messages to and kicking and listing off users from the server and from clients. It should allow for up to 10 clients at a time.
 
 Who did what:
-	Chris: worked on connecting and forking for each user (inside main). also 
+	Chris: worked on connecting and forking for each user (inside main). also
 	Ray: worked on connecting and forking for each user (inside main).
 	John: worked on connecting and forking for each user (inside main).
+	Designated typers were rotated while the other 2 looked on and gave instructions.
+	All decisions were collaborative and jointly made.
