@@ -1,0 +1,7 @@
+Purpose:
+	The purpose of this program is to allow for a chat between processes. There should be some functionality when it comes to who to send messages to and kicking and listing off users from the server and from clients. It should allow for up to 10 clients at a time.
+
+Who did what:
+	Chris: worked on connecting and forking for each user (inside main). also 
+	Ray: worked on connecting and forking for each user (inside main).
+	John: worked on connecting and forking for each user (inside main).
