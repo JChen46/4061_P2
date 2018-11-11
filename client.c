@@ -22,12 +22,12 @@ void main(int argc, char * argv[]) {
 	//checks if user id is an argument
 	char *user_id = argv[1];
 	if (user_id == 0) {
-		perror("user_id not specified");
+		perror("user_id not specified\n");
 		exit(1);
 	}
 
 	if(connect_to_server(SERVER_ID, user_id, server_to_user, user_to_server) == -1) {
-    perror("Couldn't connect to server.");
+    perror("Couldn't connect to server.\n");
 		exit(-1);
 	}
 	/* -------------- YOUR CODE STARTS HERE -----------------------------------*/
@@ -42,13 +42,13 @@ void main(int argc, char * argv[]) {
 		int readReturn;
 		if ((readReturn = read(server_to_user[0], buf, MAX_MSG)) == -1) {
 			if (errno != EAGAIN) {
-				perror("error reading server message");
+				perror("error reading server message\n");
 			}
 		}
 		else {
 			if (readReturn == 0) {
-				perror("you've been kicked");
-				exit(0);
+				perror("you've been kicked\n");
+				kill(getpid(), SIGINT);
 			}
 			printf("\n%s", buf);
 			print_prompt(user_id);
@@ -58,13 +58,13 @@ void main(int argc, char * argv[]) {
 		int n;
 		if ((n = read(0, buf, MAX_MSG)) == -1) {
 			if (errno != EAGAIN) {
-				perror("error reading user message");
+				perror("error reading user message\n");
 			}
 		}
 		else {
 			buf[n] = '\0';
 			if (write(user_to_server[1], buf, MAX_MSG) == -1) {
-				perror("error sending user message to server");
+				perror("error sending user message to server\n");
 			}
 			print_prompt(user_id);
 		}

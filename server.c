@@ -69,6 +69,54 @@ int list_users(int idx, USER * user_list)
 		/* write to the given pipe fd */
 		if (write(user_list[idx].m_fd_to_user, buf, strlen(buf) + 1) < 0)
 			perror("writing to server shell");
+
+	}
+
+	return 0;
+}
+
+int admin_list_users(int idx, USER * user_list)
+{
+	// iterate through the user list
+	// if you find any slot which is not empty, print that m_user_id
+	// if every slot is empty, print "<no users>""
+	// If the function is called by the server (that is, idx is -1), then printf the list
+	// If the function is called by the user, then send the list to the user using write() and passing m_fd_to_user
+	// return 0 on success
+	int i, flag = 0;
+	char buf[MAX_MSG] = {}, *s = NULL;
+
+	/* construct a list of user names */
+	s = buf;
+	strncpy(s, "---connected user list---\n", strlen("---connected user list---\n"));
+	s += strlen("---connected user list---\n");
+	for (i = 0; i < MAX_USER; i++) {
+		if (user_list[i].m_status == SLOT_EMPTY)
+			continue;
+		flag = 1;
+		strncpy(s, user_list[i].m_user_id, strlen(user_list[i].m_user_id));
+		s = s + strlen(user_list[i].m_user_id);
+		strncpy(s, "\n", 1);
+		s++;
+	}
+	if (flag == 0) {
+		strcpy(buf, "<no users>\n");
+	}
+	else {
+		s--;
+		strncpy(s, "\n\n\0", 3);
+	}
+
+	if (idx <= 0) {
+		printf("%s", buf);
+		printf("\n");
+	}
+	else {
+		printf("\n");
+		/* write to the given pipe fd */
+		if (write(user_list[idx].m_fd_to_user, buf, strlen(buf) + 1) < 0) {
+			perror("writing to server shell");
+		}
 	}
 
 	return 0;
@@ -434,6 +482,7 @@ int main(int argc, char * argv[])
 				else {
 					broadcast_msg(user_list, buf, user_list[i].m_user_id);
 				}
+			print_prompt("admin");//after clientinput
 			}
 		}
 		// Poll stdin (input from the terminal) and handle admnistrative command
@@ -446,7 +495,7 @@ int main(int argc, char * argv[])
 		else {
 			buf[n] = '\0';
 			if (strncmp(buf, "\\list",5) == 0) {
-				list_users(0, user_list);
+				admin_list_users(0, user_list);
 			}
 			else if (strncmp(buf, "\\exit", 5) == 0) {
 				int i;
