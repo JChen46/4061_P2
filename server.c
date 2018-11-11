@@ -144,11 +144,28 @@ int broadcast_msg(USER * user_list, char *inbuf, char *sender)
 	for (i = 0; i < MAX_USER; i++) {
 		char buf[MAX_MSG + MAX_USER_ID + 2];
 		if (user_list[i].m_status == SLOT_FULL && strcmp(user_list[i].m_user_id, sender)) {
-			printf("before: %s \n", buf);
 			strcpy(buf, sender);
 			strcat(buf, ": ");
 			strcat(buf, inbuf);
-			printf("after: %s \n", buf);
+			if (write(user_list[i].m_fd_to_user, buf, MAX_MSG) == -1) {
+				fprintf(stderr, "failed to broadcast message to %s", user_list[i].m_user_id);
+			}
+		}
+	}
+	return 0;
+}
+
+//admin broadcasts to all users
+int admin_broadcast(USER * user_list, char *inbuf)
+{
+	//server broadcasts message to all users
+	//return zero on success
+	int i;
+	for (i = 0; i < MAX_USER; i++) {
+		char buf[MAX_MSG + 8];
+		if (user_list[i].m_status == SLOT_FULL) {
+			strcpy(buf, "Notice: ");
+			strcat(buf, inbuf);
 			if (write(user_list[i].m_fd_to_user, buf, MAX_MSG) == -1) {
 				fprintf(stderr, "failed to broadcast message to %s", user_list[i].m_user_id);
 			}
@@ -243,10 +260,18 @@ int extract_text(char *buf, char * text)
 void send_p2p_msg(int idx, USER * user_list, char *buf)
 {
 	char target_name[MAX_USER_ID];
+	char p2p_message[MAX_MSG];
+	char final_msg[MAX_MSG];
+	char second_msg[MAX_MSG] = " whispers to you: ";
 	// get the target user by name using extract_name() function
-	if ( (extract_name(buf, target_name)) == -1) {
+	if ((extract_name(buf, target_name)) == -1) {
 		perror("Unable to extract username from buffer");
 	}
+	if (extract_text(buf, p2p_message) == -1) {
+		perror("Unable to extract text");
+	}
+	strcpy(final_msg, user_list[idx].m_user_id);
+	strcat(final_msg, strcat(second_msg, p2p_message)); //put p2p message into final_msg
 	// find the user id using find_user_index()
 	int user_id;
 	// if user not found, write back to the original user "User not found", using the write()function on pipes.
@@ -254,7 +279,7 @@ void send_p2p_msg(int idx, USER * user_list, char *buf)
 		write(user_list[idx].m_fd_to_user, "User not found", MAX_MSG);
 	}
 	// if the user is found then write the message that the user wants to send to that user.
-	write(user_list[user_id].m_fd_to_user, buf, MAX_MSG);
+	write(user_list[user_id].m_fd_to_user, final_msg, MAX_MSG);
 }
 
 //takes in the filename of the file being executed, and prints an error message stating the commands and their usage
@@ -412,6 +437,48 @@ int main(int argc, char * argv[])
 			}
 		}
 		// Poll stdin (input from the terminal) and handle admnistrative command
+		int n;
+		if ((n = read(0, buf, MAX_MSG)) == -1) {
+			if (errno != EAGAIN) {
+				perror("error reading user message");
+			}
+		}
+		else {
+			buf[n] = '\0';
+			if (strncmp(buf, "\\list",5) == 0) {
+				list_users(0, user_list);
+			}
+			else if (strncmp(buf, "\\exit", 5) == 0) {
+				int i;
+				for (i = 0; i < MAX_USER; i++) {
+					kick_user(i, user_list);
+				}
+			}
+			else if (strncmp(buf, "\\kick", 5) == 0) {
+				int get_user;
+				char kicked_name[MAX_USER_ID];
+				if ((get_user = extract_name(buf, kicked_name)) == -1) {
+					perror("unable to extract username");
+				}
+				int kicked_index = find_user_index(user_list, kicked_name);
+				kick_user(kicked_index, user_list);
+			}
+			else {
+				int i;
+				admin_broadcast(user_list, buf);
+			}
+			print_prompt("admin");
+		}
+
+
+		
+		/*buf[n] = '\0';
+		if (write(server_to_child[1], buf, MAX_MSG) == -1) {
+			perror("error sending server message to users");
+		}
+		print_prompt(user_id);*/
+		
+
 		usleep(100000);
 
 		/* ------------------------YOUR CODE FOR MAIN--------------------------------*/
