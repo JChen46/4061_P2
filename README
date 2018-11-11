@@ -8,8 +8,28 @@ Purpose:
 	The purpose of this program is to allow for a chat between processes. There should be some functionality when it comes to who to send messages to and kicking and listing off users from the server and from clients. It should allow for up to 10 clients at a time.
 
 Who did what:
-	Chris: worked on connecting and forking for each user (inside main). also
-	Ray: worked on connecting and forking for each user (inside main).
-	John: worked on connecting and forking for each user (inside main).
+	Chris: worked on connecting and forking for each user (inside main). also implemented kill, cleanup_user, kick. worked on client.c
+	Ray: worked on connecting and forking for each user (inside main). broadcast_msg, send_p2p_msg, worked on client.c
+	John: worked on connecting and forking for each user (inside main). broadcast_admin, send_p2p_msg, worked on client.c
 	Designated typers were rotated while the other 2 looked on and gave instructions.
 	All decisions were collaborative and jointly made.
+
+Compile:
+	Type make
+
+Usage:
+	Run server with ./server, and run clients with ./client <username> (username must be provided)
+
+What it does:
+	server waits for connections from clients, when they connect, it creates a child process that relays all information from server to user, and from user to server.
+	While clients are connected, the server polls the children (who are polling the users) for messages. If it receives a message, it interprets the command if there is one, and calls functions accordingly passing on the message.
+	While a client is connected, the client process polls for data in the stdin and a message from the server.
+
+Assumptions:
+	That the user only wants to send ASCII messages.
+	
+Error handling:
+	Any time there is a read or a write, the return value is checked, and errno is checked accordingly. Basically any time a function can return an integer based on how properly it works, we check that integer.
+
+Note:
+	For some reason, read would not return 0 on a pipe whose write end is closed, so kick functionally couldn't be implemented fully.
