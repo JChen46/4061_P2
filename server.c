@@ -143,7 +143,7 @@ int add_user(int idx, USER * user_list, int pid, char * user_id, int pipe_to_chi
 void kill_user(int idx, USER * user_list) {
 	// kill a user (specified by idx) by using the systemcall kill()
 	// then call waitpid on the user
-	kill(user_list[idx].m_pid, SIGTERM);
+	kill(user_list[idx].m_pid, SIGINT);
 	int status;
 	waitpid(user_list[idx].m_pid, &status, 0);
 	if (!WIFEXITED(status)) {
@@ -360,24 +360,35 @@ void init_user_list(USER * user_list) {
 /*
  * Function that each child process loops in
  */
-int child_IPC(int server_to_child[2], int child_to_server[2], int child_to_user[2], int user_to_child[2]) {
+int child_IPC(int idx,USER * user_list, int server_to_child[2], int child_to_server[2], int child_to_user[2], int user_to_child[2]) {
 	close(server_to_child[1]);
 	close(child_to_server[0]);
 	close(child_to_user[0]);
 	close(user_to_child[1]);
 	while (1) {
 		char buf[MAX_MSG];
-		if ((read(server_to_child[0], buf, MAX_MSG)) > 0) {
+		int result;
+		if ((result = read(server_to_child[0], buf, MAX_MSG)) > 0) {
 			if(write(child_to_user[1], buf, MAX_MSG) == -1) {
 				perror("problem in child: writing to user");
 			}
 		}
-		if ((read(user_to_child[0], buf, MAX_MSG)) > 0) {
+		//else if (result == 0) {
+		//	//in this case the pipe is closed and the child should be KILLED
+		//	printf("KICKING SERVERTOCHILD");
+		//	kick_user(idx, user_list);
+		//}
+		if ((result = read(user_to_child[0], buf, MAX_MSG)) > 0) {
 			if(write(child_to_server[1], buf, MAX_MSG) == -1) {
 				perror("problem in child: writing to server");
 			}
 		}
-
+		else if (result == 0) {
+			//in this case the pipe is closed and the child should be KILLED
+			printf("KICKING USERTOCHILD");
+			fflush(stdout);
+			//kick_user(idx, user_list); ///////////////////////////////////////////////////////////////
+		}
 		usleep(100000);
 	}
 	return 0;
@@ -453,7 +464,7 @@ int main(int argc, char * argv[])
 				}
 				else {
 					//child infinite loop
-					if (!child_IPC(server_to_child, child_to_server, child_to_user, user_to_child)) {
+					if (!child_IPC(i, user_list, server_to_child, child_to_server, child_to_user, user_to_child)) {
 						perror("child IPC has failed");
 					}
 				}
