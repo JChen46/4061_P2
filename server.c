@@ -75,6 +75,7 @@ int list_users(int idx, USER * user_list)
 	return 0;
 }
 
+//called by server to show list of users on server side
 int admin_list_users(int idx, USER * user_list)
 {
 	// iterate through the user list
@@ -143,11 +144,11 @@ int add_user(int idx, USER * user_list, int pid, char * user_id, int pipe_to_chi
 void kill_user(int idx, USER * user_list) {
 	// kill a user (specified by idx) by using the systemcall kill()
 	// then call waitpid on the user
-	kill(user_list[idx].m_pid, SIGINT);
+	kill(user_list[idx].m_pid, SIGINT); //kills user using the user_list.m_pid
 	int status;
 	waitpid(user_list[idx].m_pid, &status, 0);
 	if (!WIFEXITED(status)) {
-		perror("user died incorrectly");
+		perror("user died incorrectly"); 
 	}
 }
 
@@ -190,12 +191,12 @@ int broadcast_msg(USER * user_list, char *inbuf, char *sender)
 	//return zero on success
 	int i;
 	for (i = 0; i < MAX_USER; i++) {
-		char buf[MAX_MSG + MAX_USER_ID + 2];
-		if (user_list[i].m_status == SLOT_FULL && strcmp(user_list[i].m_user_id, sender)) {
-			strcpy(buf, sender);
+		char buf[MAX_MSG + MAX_USER_ID + 2]; //max message plus the added username beforehand
+		if (user_list[i].m_status == SLOT_FULL && strcmp(user_list[i].m_user_id, sender)) { //if the userlist is full and the sender is not the targeted user
+			strcpy(buf, sender); //put the message with name before into buf
 			strcat(buf, ": ");
 			strcat(buf, inbuf);
-			if (write(user_list[i].m_fd_to_user, buf, MAX_MSG) == -1) {
+			if (write(user_list[i].m_fd_to_user, buf, MAX_MSG) == -1) { //write buf to all users
 				fprintf(stderr, "failed to broadcast message to %s", user_list[i].m_user_id);
 			}
 		}
@@ -203,13 +204,13 @@ int broadcast_msg(USER * user_list, char *inbuf, char *sender)
 	return 0;
 }
 
-//admin broadcasts to all users
+//admin broadcasts to all users, uses name Notice instead of user usernames
 int admin_broadcast(USER * user_list, char *inbuf)
 {
 	//server broadcasts message to all users
 	//return zero on success
 	int i;
-	for (i = 0; i < MAX_USER; i++) {
+	for (i = 0; i < MAX_USER; i++) { 
 		char buf[MAX_MSG + 8];
 		if (user_list[i].m_status == SLOT_FULL) {
 			strcpy(buf, "Notice: ");
@@ -373,22 +374,12 @@ int child_IPC(int idx,USER * user_list, int server_to_child[2], int child_to_ser
 				perror("problem in child: writing to user");
 			}
 		}
-		//else if (result == 0) {
-		//	//in this case the pipe is closed and the child should be KILLED
-		//	printf("KICKING SERVERTOCHILD");
-		//	kick_user(idx, user_list);
-		//}
 		if ((result = read(user_to_child[0], buf, MAX_MSG)) > 0) {
 			if(write(child_to_server[1], buf, MAX_MSG) == -1) {
 				perror("problem in child: writing to server");
 			}
 		}
-		else if (result == 0) {
-			//in this case the pipe is closed and the child should be KILLED
-			printf("KICKING USERTOCHILD");
-			fflush(stdout);
-			//kick_user(idx, user_list); ///////////////////////////////////////////////////////////////
-		}
+		
 		usleep(100000);
 	}
 	return 0;
